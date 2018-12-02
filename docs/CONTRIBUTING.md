@@ -1,4 +1,4 @@
-# Contributing to fdns-ms-dotnet-example
+# Contributing to ex-ms-dotnet-bookstore
 
 Pull requests are the best way to propose changes to the codebase. We actively welcome your pull requests:
 
