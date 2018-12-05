@@ -18,7 +18,7 @@ You will need to have the following software installed to debug this microservic
 
 - [Visual Studio Code](https://code.visualstudio.com/)
 - [C# Extension for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=ms-vscode.csharp)
-- [.NET Core SDK 2.1](https://www.microsoft.com/net/download)
+- [.NET Core SDK 2.2](https://www.microsoft.com/net/download)
 
 1. Open Visual Studio Code
 1. Select **File** > **OpenFolder** and select `ex-ms-dotnet-bookstore/src`

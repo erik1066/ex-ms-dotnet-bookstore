@@ -1,5 +1,5 @@
-# ASP.NET Core 2.1 Example Bookstore Microservice
-This is a repository containing an example ASP.NET Core 2.1 microservice with basic REST APIs for a fictional bookstore. It is intended for C# / ASP.NET Core 2.x developers to fork and modify. It includes implementations for:
+# ASP.NET Core 2.2 Example Bookstore Microservice
+This is a repository containing an example ASP.NET Core 2.2 microservice with basic REST APIs for a fictional bookstore. It is intended for C# / ASP.NET Core 2.x developers to fork and modify. It includes implementations for:
 
 * Dependency injection
 * Logging

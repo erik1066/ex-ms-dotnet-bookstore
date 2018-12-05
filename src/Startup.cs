@@ -60,7 +60,7 @@ namespace Foundation.Example.WebUI
             {
                 c.SwaggerDoc("v1", new Info
                 {
-                    Title = "Example .NET Core 2.1 Bookstore API",
+                    Title = "Example .NET Core 2.2 Bookstore API",
                     Version = "v1",
                     Description = "An example microservice for a fictional bookstore that shows how to use the FDNS .NET Core SDK.",
                     Contact = new Contact
@@ -230,9 +230,8 @@ namespace Foundation.Example.WebUI
                     )
                     .AddHealthCheckGroup(
                         "memory",
-                        group => group.AddPrivateMemorySizeCheck(1)
-                                    .AddVirtualMemorySizeCheck(128_000_000_000)
-                                    .AddWorkingSetCheck(140_000_000),
+                        group => group.AddPrivateMemorySizeCheck(240_000_000)
+                                      .AddWorkingSetCheck(240_000_000),
                             CheckStatus.Unhealthy
                     );
             });
@@ -295,7 +294,7 @@ namespace Foundation.Example.WebUI
             app.UseSwagger();
             app.UseSwaggerUI(c =>
             {
-                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Example Bookstore .NET Core 2.1 API V1");
+                c.SwaggerEndpoint("/swagger/v1/swagger.json", "Example Bookstore .NET Core 2.2 API V1");
             });
 
             app.UseAuthentication();
