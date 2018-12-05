@@ -306,7 +306,7 @@ namespace Foundation.Example.WebUI
         {
             return HttpPolicyExtensions
                 .HandleTransientHttpError()
-                .CircuitBreakerAsync(5, TimeSpan.FromSeconds(15));
+                .CircuitBreakerAsync(5, TimeSpan.FromSeconds(5));
         }
     }
 }
