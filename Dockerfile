@@ -1,4 +1,5 @@
-FROM microsoft/dotnet:2.2.100-sdk-alpine3.8 as publish
+# Build stage
+FROM microsoft/dotnet:2.2.100-sdk-alpine3.8 as build
 
 RUN apk update && apk upgrade --no-cache
 
@@ -7,6 +8,7 @@ WORKDIR /src
 
 RUN dotnet publish -c Release
 
+# Run stage
 FROM microsoft/dotnet:2.2.0-aspnetcore-runtime-alpine3.8 as run
 
 RUN apk update && apk upgrade --no-cache
@@ -28,7 +30,7 @@ ENV STORAGE_URL ${STORAGE_URL}
 ENV RULES_URL ${RULES_URL}
 ENV INDEXING_URL ${INDEXING_URL}
 
-COPY --from=publish /src/bin/Release/netcoreapp2.2/publish /app
+COPY --from=build /src/bin/Release/netcoreapp2.2/publish /app
 WORKDIR /app
 
 # don't run as root user
