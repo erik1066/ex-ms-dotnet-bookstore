@@ -3,7 +3,6 @@ docker-build:
 		-t ex-ms-dotnet-bookstore \
 		--rm \
 		--force-rm=true \
-		--no-cache \
 		--build-arg ASPNETCORE_ENVIRONMENT=production \
 		--build-arg APP_NAME=Example-Bookstore-Customer \
 		--build-arg OBJECT_URL=http://fdns-ms-object:8083/api/1.0 \
