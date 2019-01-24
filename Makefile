@@ -5,7 +5,7 @@ docker-build:
 		--force-rm=true \
 		--build-arg ASPNETCORE_ENVIRONMENT=production \
 		--build-arg APP_NAME=Example-Bookstore-Customer \
-		--build-arg OBJECT_URL=http://fdns-ms-object:8083/api/1.0 \
+		--build-arg OBJECT_URL=http://fdns-ms-object:9090/api/1.0 \
 		--build-arg STORAGE_URL=http://fdns-ms-storage:8082/api/1.0 \
 		--build-arg RULES_URL=http://fdns-ms-rules:8086/api/1.0 \
 		--build-arg INDEXING_URL=http://fdns-ms-indexing:8084/api/1.0 \

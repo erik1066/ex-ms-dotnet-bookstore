@@ -18,7 +18,6 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Swashbuckle.AspNetCore.Swagger;
 using Foundation.Sdk;
-using Foundation.Sdk.Data;
 using Foundation.Sdk.Security;
 using Foundation.Sdk.Services;
 using Foundation.Example.WebUI.Importers;
@@ -27,6 +26,7 @@ using Foundation.Example.WebUI.Security;
 using Polly;
 using Polly.Extensions;
 using Polly.Extensions.Http;
+using Newtonsoft.Json.Serialization;
 
 namespace Foundation.Example.WebUI
 {
@@ -95,13 +95,15 @@ namespace Foundation.Example.WebUI
 
             services.AddMvc(options =>
             {
-               options.InputFormatters.Insert(0, new TextPlainInputFormatter());
-               options.InputFormatters.Insert(0, new JsonRawInputFormatter());
-               options.OutputFormatters.Insert(0, new JsonRawOutputFormatter());
+               options.InputFormatters.Insert(0, new TextPlainInputFormatter(new List<string>() { "text/plain" }));
+               options.InputFormatters.Insert(0, new JsonRawInputFormatter(new List<string>() { "application/json", "application/vnd.mycompany.myapp.book+json; version=1.0" }));
+               options.OutputFormatters.Insert(0, new JsonRawOutputFormatter(new List<string>() { "application/json", "application/vnd.mycompany.myapp.book+json; version=1.0" }));
             })
             .AddJsonOptions(options =>
             {
-                options.SerializerSettings.Formatting = Newtonsoft.Json.Formatting.Indented;
+                options.SerializerSettings.NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore;
+                options.SerializerSettings.Formatting = Newtonsoft.Json.Formatting.None;
+                options.SerializerSettings.ContractResolver = new CamelCasePropertyNamesContractResolver();
             })
             .SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
@@ -115,7 +117,7 @@ namespace Foundation.Example.WebUI
             });
 
             // Get the URL to the FDNS Object microservice from the configuration. Note that OBJECT_URL is an environment variable, while ObjectService:Url refers to something in AppSettings.json
-            var objectServiceUrl = Sdk.Common.GetConfigurationVariable(Configuration, "OBJECT_URL", "ObjectService:Url", "http://localhost:8083/api/1.0");
+            var objectServiceUrl = Sdk.Common.GetConfigurationVariable(Configuration, "OBJECT_URL", "ObjectService:Url", "http://localhost:9090/api/1.0");
             var storageServiceUrl = Sdk.Common.GetConfigurationVariable(Configuration, "STORAGE_URL", "StorageService:Url", "http://localhost:8082/api/1.0");
             var indexingServiceUrl = Sdk.Common.GetConfigurationVariable(Configuration, "INDEXING_URL", "IndexingService:Url", "http://localhost:8084/api/1.0");
             var rulesServiceUrl = Sdk.Common.GetConfigurationVariable(Configuration, "RULES_URL", "RulesService:Url", "http://localhost:8086/api/1.0");
@@ -124,7 +126,7 @@ namespace Foundation.Example.WebUI
             // HTTP client for FDNS Object service: Bookstore database, Customer collection
             services.AddHttpClient($"{applicationName}-{Common.OBJECT_SERVICE_NAME}", client =>
             {
-                client.BaseAddress = new Uri($"{objectServiceUrl}/bookstore/");
+                client.BaseAddress = new Uri($"{objectServiceUrl}/");
                 client.DefaultRequestHeaders.Add("X-Correlation-App", applicationName);
             })
             .AddTransientHttpErrorPolicy(builder => builder.WaitAndRetryAsync(new[]
@@ -184,17 +186,10 @@ namespace Foundation.Example.WebUI
             #endregion
 
             #region Create services for dependency injection
-            services.AddSingleton<IObjectRepository<string>>(provider => new HttpObjectRepository<string>(
-                provider.GetService<IHttpClientFactory>(),
-                provider.GetService<ILogger<HttpObjectRepository<string>>>(),
+            services.AddSingleton<IObjectService>(provider => new HttpObjectService(
                 applicationName,
-                "books"));
-
-            services.AddSingleton<IObjectRepository<Customer>>(provider => new HttpObjectRepository<Customer>(
                 provider.GetService<IHttpClientFactory>(),
-                provider.GetService<ILogger<HttpObjectRepository<Customer>>>(),
-                applicationName,
-                "customers"));
+                provider.GetService<ILogger<HttpObjectService>>()));
 
             services.AddSingleton<IStorageRepository>(provider => new HttpStorageRepository(
                 provider.GetService<IHttpClientFactory>(),
@@ -213,7 +208,7 @@ namespace Foundation.Example.WebUI
                 applicationName));
 
             services.AddSingleton<ICustomerImporter>(provider => new HttpCustomerImporter(
-                provider.GetService<IObjectRepository<Customer>>()));
+                provider.GetService<IObjectService>()));
             #endregion // Create services for dependency injection
 
             #region Health checks

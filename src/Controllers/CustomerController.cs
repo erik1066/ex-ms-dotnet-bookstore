@@ -9,7 +9,6 @@ using Foundation.Example.WebUI.Models;
 using Foundation.Example.WebUI.Importers;
 using Foundation.Example.WebUI.Converters;
 using Foundation.Sdk;
-using Foundation.Sdk.Data;
 using Foundation.Sdk.Services;
 using Swashbuckle.AspNetCore.Annotations;
 using Polly.CircuitBreaker;
@@ -27,24 +26,36 @@ namespace Foundation.Example.WebUI.Controllers
     {
         #region Private Members
         private const string CIRCUIT_BREAKER_ERROR = "Customer Service is inoperative, please try later on. (Business message due to Circuit-Breaker)";
-        private readonly IObjectRepository<Customer> _customerRepository;
+        private const string DB_NAME = "bookstore";
+        private const string COLLECTION_NAME = "customers";
+        private readonly IObjectService _customerService;
         private readonly ICustomerImporter _customerImporter;
         private readonly IStorageRepository _storageRepository;
         private readonly IIndexingService _indexingService;
         private readonly IRulesService _rulesService;
+        private readonly JsonSerializerSettings _jsonSerializerSettings = new JsonSerializerSettings() 
+        { 
+            NullValueHandling = NullValueHandling.Ignore, 
+            ContractResolver = new CamelCasePropertyNamesContractResolver() 
+        };
         #endregion // Private Members
 
         /// <summary>
         /// Constructor
         /// </summary>
-        /// <param name="customerRepository">FDNS Object Customer repository</param>
+        /// <param name="customerService">FDNS Object Customer service</param>
         /// <param name="storageRepository">FDNS Storage repository</param>
         /// <param name="indexingService">FDNS Indexing service</param>
         /// <param name="rulesService">FDNS Rules service</param>
         /// <param name="customerImporter">Customer importer</param>
-        public CustomerController(IObjectRepository<Customer> customerRepository, IStorageRepository storageRepository, IIndexingService indexingService, IRulesService rulesService, ICustomerImporter customerImporter)
+        public CustomerController(
+            IObjectService customerService, 
+            IStorageRepository storageRepository, 
+            IIndexingService indexingService, 
+            IRulesService rulesService, 
+            ICustomerImporter customerImporter)
         {
-            _customerRepository = customerRepository;
+            _customerService = customerService;
             _storageRepository = storageRepository;
             _indexingService = indexingService;
             _rulesService = rulesService;
@@ -65,12 +76,12 @@ namespace Foundation.Example.WebUI.Controllers
         [SwaggerResponse(403, "If the HTTP header has a valid OAuth2 token but lacks the appropriate scope to use this route")]
         [SwaggerResponse(404, "If the customer with this ID was not found")]
         [Authorize(Common.READ_AUTHORIZATION_NAME)]
-        public async Task<ActionResult<Customer>> Get([FromRoute] string id)
+        public async Task<ActionResult<string>> Get([FromRoute] string id)
         {
             try
             {
-                ServiceResult<Customer> result = await _customerRepository.GetAsync(id); // This is what calls the FDNS Object microservice through the FDNS .NET Core SDK
-                return HandleObjectResult<Customer>(result); // Determine what to do based on the HTTP response code
+                ServiceResult<string> result = await _customerService.GetAsync(DB_NAME, COLLECTION_NAME, id); // This is what calls the FDNS Object microservice through the FDNS .NET Core SDK
+                return HandleObjectResult<string>(result); // Determine what to do based on the HTTP response code
             }
             catch (BrokenCircuitException)
             {
@@ -97,7 +108,7 @@ namespace Foundation.Example.WebUI.Controllers
         ///
         /// </remarks>
         /// <param name="id">The ID of the customer</param>
-        /// <param name="payload">The Json representation of the customer</param>
+        /// <param name="customer">The Json representation of the customer</param>
         /// <returns>Customer that was inserted</returns>
         [Produces("application/json")]
         [Consumes("application/json")]
@@ -110,12 +121,13 @@ namespace Foundation.Example.WebUI.Controllers
         [SwaggerResponse(413, "If the Json payload is too large")]
         [SwaggerResponse(415, "If the media type is invalid")]
         [Authorize(Common.INSERT_AUTHORIZATION_NAME)]
-        public async Task<ActionResult<Customer>> Post([FromRoute] string id, [FromBody] Customer payload)
+        public async Task<ActionResult<string>> Post([FromRoute] string id, [FromBody] Customer customer)
         {
             try
             {
-                ServiceResult<Customer> result = await _customerRepository.InsertAsync(id, payload);
-                return HandleObjectResult<Customer>(result, id);
+                string payload = JsonConvert.SerializeObject(customer, _jsonSerializerSettings);
+                ServiceResult<string> result = await _customerService.InsertAsync(DB_NAME, COLLECTION_NAME, id, payload);
+                return HandleObjectResult<string>(result, id);
             }
             catch (BrokenCircuitException)
             {
@@ -142,7 +154,7 @@ namespace Foundation.Example.WebUI.Controllers
         ///
         /// </remarks>
         /// <param name="id">The ID of the customer</param>
-        /// <param name="payload">The Json representation of the customer</param>
+        /// <param name="customer">The Json representation of the customer</param>
         /// <returns>Customer that was replaced</returns>
         [Produces("application/json")]
         [Consumes("application/json")]
@@ -156,12 +168,13 @@ namespace Foundation.Example.WebUI.Controllers
         [SwaggerResponse(413, "If the Json payload is too large")]
         [SwaggerResponse(415, "If the media type is invalid")]
         [Authorize(Common.UPDATE_AUTHORIZATION_NAME)]
-        public async Task<ActionResult<Customer>> Put([FromRoute] string id, [FromBody] Customer payload)
+        public async Task<ActionResult<string>> Put([FromRoute] string id, [FromBody] Customer customer)
         {
             try
             {
-                ServiceResult<Customer> result = await _customerRepository.ReplaceAsync(id, payload);
-                return HandleObjectResult<Customer>(result);
+                string payload = JsonConvert.SerializeObject(customer, _jsonSerializerSettings);
+                ServiceResult<string> result = await _customerService.ReplaceAsync(DB_NAME, COLLECTION_NAME, id, payload);
+                return HandleObjectResult<string>(result);
             }
             catch (BrokenCircuitException)
             {
@@ -182,12 +195,12 @@ namespace Foundation.Example.WebUI.Controllers
         [SwaggerResponse(403, "If the HTTP header has a valid OAuth2 token but lacks the appropriate scope to use this route")]
         [SwaggerResponse(404, "If the customer to delete cannot be found")]
         [Authorize(Common.DELETE_AUTHORIZATION_NAME)]
-        public async Task<ActionResult<DeleteResult>> Delete(string id)
+        public async Task<ActionResult<int>> Delete(string id)
         {
             try
             {
-                ServiceResult<DeleteResult> result = await _customerRepository.DeleteAsync(id);
-                return HandleObjectResult<DeleteResult>(result);
+                ServiceResult<int> result = await _customerService.DeleteAsync(DB_NAME, COLLECTION_NAME, id);
+                return HandleObjectResult<int>(result);
             }
             catch (BrokenCircuitException)
             {
@@ -225,12 +238,20 @@ namespace Foundation.Example.WebUI.Controllers
         [SwaggerResponse(413, "If the find expression is too large")]
         [SwaggerResponse(415, "If the media type is invalid")]
         [Authorize(Common.READ_AUTHORIZATION_NAME)]
-        public async Task<ActionResult<SearchResults<Customer>>> Find([FromBody] string findCriteria)
+        public async Task<ActionResult> Find([FromBody] string findCriteria)
         {
             try
             {
-                ServiceResult<SearchResults<Customer>> result = await _customerRepository.FindAsync(0, 10, "name", findCriteria, false);
-                return HandleObjectResult<SearchResults<Customer>>(result);
+                FindCriteria options = new FindCriteria()
+                {
+                    Start = 0,
+                    Limit = 10,
+                    SortFieldName = "name",
+                    SortDirection = System.ComponentModel.ListSortDirection.Ascending
+                };
+
+                ServiceResult<SearchResults> result = await _customerService.FindAsync(DB_NAME, COLLECTION_NAME, findCriteria, options);
+                return HandleSearchResult(result);
             }
             catch (BrokenCircuitException)
             {
@@ -283,7 +304,7 @@ namespace Foundation.Example.WebUI.Controllers
                 }
                 if (storageResult.IsSuccess == false)
                 {
-                    return StatusCode((int)storageResult.Code, storageResult.Message);
+                    return StatusCode(storageResult.Status, storageResult.Details);
                 }
             }
             catch (BrokenCircuitException)
@@ -294,7 +315,7 @@ namespace Foundation.Example.WebUI.Controllers
             // Now import each Customer into FDNS Object
             var customers = new Converters.CsvToCustomersConverter().Convert(payload);
             ImportResult importResult = await _customerImporter.ImportAsync(customers);
-            importResult.StorageMetadata = storageResult.Response;
+            importResult.StorageMetadata = storageResult.Value;
             return Ok(importResult);
         }
 
@@ -316,7 +337,7 @@ namespace Foundation.Example.WebUI.Controllers
             {
                 var listAllNodesResult = await _storageRepository.GetAllNodesAsync();
 
-                foreach (var node in listAllNodesResult.Response)
+                foreach (var node in listAllNodesResult.Value)
                 {
                     var id = node.Id.ToString();
                     var deleteNodeResult = await _storageRepository.DeleteNodeAsync(id);
@@ -344,14 +365,14 @@ namespace Foundation.Example.WebUI.Controllers
             // upsert the config in case it's not there; remove this for production, though, likely would handle this differently
             var upsertResult = await _rulesService.UpsertProfileAsync("bookstore-customer", "{ \"$gte\": { \"$.age\": 18 } }");
 
-            switch (upsertResult.Code)
+            switch (upsertResult.Status)
             {
-                case HttpStatusCode.OK:
+                case 200:
                     break;
-                case HttpStatusCode.Created:
+                case 201:
                     break;
                 default:
-                    return StatusCode((int)upsertResult.Code, upsertResult.Message);
+                    return StatusCode(upsertResult.Status, upsertResult.Details);
             }
 
             string customerString = Newtonsoft.Json.JsonConvert.SerializeObject(payload, new JsonSerializerSettings
@@ -360,25 +381,36 @@ namespace Foundation.Example.WebUI.Controllers
             });
             var validationResult = await _rulesService.ValidateAsync("bookstore-customer", customerString, explain);
 
-            switch (validationResult.Code)
+            switch (validationResult.Status)
             {
-                case HttpStatusCode.OK:
-                    return Content(validationResult.Response, "application/json");
+                case 200:
+                    return Content(validationResult.Value, "application/json");
                 default:
-                    return StatusCode((int)validationResult.Code, validationResult.Message);
+                    return StatusCode(validationResult.Status, validationResult.Details);
+            }
+        }
+
+        private ActionResult HandleSearchResult(ServiceResult<SearchResults> result)
+        {
+            switch (result.Status)
+            {
+                case 200:
+                    return Ok(result.Value.StringifyItems());
+                default:
+                    return StatusCode(result.Status, result.Details);
             }
         }
 
         private ActionResult<T> HandleObjectResult<T>(ServiceResult<T> result, string id = "")
         {
-            switch (result.Code)
+            switch (result.Status)
             {
-                case HttpStatusCode.OK:
-                    return Ok(result.Response);
-                 case HttpStatusCode.Created:
-                    return CreatedAtAction(nameof(Get), new { id = id }, result.Response);
+                case 200:
+                    return Ok(result.Value);
+                case 201:
+                    return CreatedAtAction(nameof(Get), new { id = id }, result.Value);
                 default:
-                    return StatusCode((int)result.Code, result.Message);
+                    return StatusCode(result.Status, result.Details);
             }
         }
     }

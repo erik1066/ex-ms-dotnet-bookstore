@@ -32,7 +32,7 @@
             "env": {
                 "ASPNETCORE_ENVIRONMENT": "Development",
                 "APP_NAME": "Example-Bookstore-Customer",
-                "OBJECT_URL": "http://localhost:8083/api/1.0",
+                "OBJECT_URL": "http://localhost:9090/api/1.0",
                 "STORAGE_URL": "http://localhost:8082/api/1.0",
                 "INDEXING_URL": "http://localhost:8084/api/1.0",
                 "RULES_URL": "http://localhost:8086/api/1.0"

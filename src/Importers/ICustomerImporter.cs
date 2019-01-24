@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Foundation.Example.WebUI.Models;
 using Foundation.Sdk;
-using Foundation.Sdk.Data;
+using Foundation.Sdk.Services;
 using Swashbuckle.AspNetCore.Annotations;
 using Polly.CircuitBreaker;
 

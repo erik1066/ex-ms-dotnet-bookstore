@@ -32,12 +32,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Foundation.Sdk" Version="0.0.5" />
+    <PackageReference Include="Foundation.Sdk" Version="0.0.7" />
 
     <PackageReference Include="Microsoft.AspNetCore" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Cors" Version="2.2.0" />
-    <!-- <PackageReference Include="Microsoft.AspNetCore.Diagnostics.HealthChecks" Version="2.2.0" /> -->
     <PackageReference Include="Microsoft.AspNetCore.Mvc" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.ResponseCaching" Version="2.2.0" />
 

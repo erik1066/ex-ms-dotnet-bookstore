@@ -8,9 +8,11 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Foundation.Example.WebUI.Models;
 using Foundation.Sdk;
-using Foundation.Sdk.Data;
+using Foundation.Sdk.Services;
 using Swashbuckle.AspNetCore.Annotations;
 using Polly.CircuitBreaker;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Serialization;
 
 namespace Foundation.Example.WebUI.Importers
 {
@@ -19,11 +21,18 @@ namespace Foundation.Example.WebUI.Importers
     /// </summary>
     public sealed class HttpCustomerImporter : ICustomerImporter
     {
-        private readonly IObjectRepository<Customer> _customerRepository;
+        private readonly IObjectService _customerService;
+        private const string DB_NAME = "bookstore";
+        private const string COLLECTION_NAME = "customers";
+        private readonly JsonSerializerSettings _jsonSerializerSettings = new JsonSerializerSettings() 
+        { 
+            NullValueHandling = NullValueHandling.Ignore, 
+            ContractResolver = new CamelCasePropertyNamesContractResolver() 
+        };
 
-        public HttpCustomerImporter(IObjectRepository<Customer> customerRepository)
+        public HttpCustomerImporter(IObjectService customerService)
         {
-            _customerRepository = customerRepository;
+            _customerService = customerService;
         }
 
         public async Task<ImportResult> ImportAsync(List<Customer> customers)
@@ -31,30 +40,32 @@ namespace Foundation.Example.WebUI.Importers
             var importedIds = new Dictionary<string, string>();
             var skippedIds = new Dictionary<string, string>();
 
-            var distinctResult = await _customerRepository.GetDistinctAsync("id", "{}");
-            var ids = distinctResult.Response;
+            var distinctResult = await _customerService.GetDistinctAsync(DB_NAME, COLLECTION_NAME, "id", "{}");
+            var ids = distinctResult.Value;
 
             foreach (var customer in customers)
             {
-                ServiceResult<Customer> result = null;
+                string payload = JsonConvert.SerializeObject(customer, _jsonSerializerSettings);
+
+                ServiceResult<string> result = null;
                 try
                 {
                     if (ids.Contains(customer.Id))
                     {
-                        result = await _customerRepository.ReplaceAsync(customer.Id, customer);
+                        result = await _customerService.ReplaceAsync(DB_NAME, COLLECTION_NAME, customer.Id, payload);
                     }
                     else
                     {
-                        result = await _customerRepository.InsertAsync(customer.Id, customer);
+                        result = await _customerService.InsertAsync(DB_NAME, COLLECTION_NAME, customer.Id, payload);
                     }
 
                     if (result.IsSuccess)
                     {
-                        importedIds.Add(customer.Id, result.Code == HttpStatusCode.Created ? "inserted" : "updated");
+                        importedIds.Add(customer.Id, result.Status == 201 ? "inserted" : "updated");
                     }
                     else
                     {
-                        skippedIds.Add(customer.Id, result.Message);
+                        skippedIds.Add(customer.Id, result.Details.Detail);
                     }
                 }
                 catch (Exception ex)
