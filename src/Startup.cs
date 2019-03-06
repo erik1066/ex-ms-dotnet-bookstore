@@ -95,7 +95,7 @@ namespace Foundation.Example.WebUI
 
             services.AddMvc(options =>
             {
-               options.InputFormatters.Insert(0, new TextPlainInputFormatter(new List<string>() { "text/plain" }));
+               options.InputFormatters.Insert(0, new TextPlainInputFormatter());
                options.InputFormatters.Insert(0, new JsonRawInputFormatter(new List<string>() { "application/json", "application/vnd.mycompany.myapp.book+json; version=1.0" }));
                options.OutputFormatters.Insert(0, new JsonRawOutputFormatter(new List<string>() { "application/json", "application/vnd.mycompany.myapp.book+json; version=1.0" }));
             })
