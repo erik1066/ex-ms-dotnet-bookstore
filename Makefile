@@ -23,7 +23,7 @@ docker-start:
 docker-stop:
 	docker stop ex-ms-dotnet-bookstore_main || true
 	docker rm ex-ms-dotnet-bookstore_main || true
-	docker-compose down
+	docker-compose down --volume
 
 docker-restart:
 	make docker-stop 2>/dev/null || true
