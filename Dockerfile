@@ -1,5 +1,5 @@
 # Build stage
-FROM mcr.microsoft.com/dotnet/core/sdk:2.2.104-alpine3.8 as build
+FROM mcr.microsoft.com/dotnet/core/sdk:2.2.105-alpine3.9 as build
 
 RUN apk update && apk upgrade --no-cache
 
@@ -9,7 +9,7 @@ WORKDIR /src
 RUN dotnet publish -c Release
 
 # Run stage
-FROM mcr.microsoft.com/dotnet/core/runtime:2.2.2-alpine3.8 as run
+FROM mcr.microsoft.com/dotnet/core/runtime:2.2.3-alpine3.9 as run
 
 RUN apk update && apk upgrade --no-cache
 
