@@ -1,5 +1,5 @@
 # Build stage
-FROM mcr.microsoft.com/dotnet/core/sdk:2.2.105-alpine3.9 as build
+FROM mcr.microsoft.com/dotnet/core/sdk:2.2.202-alpine3.9 as build
 
 RUN apk update && apk upgrade --no-cache
 
